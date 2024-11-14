@@ -15,7 +15,7 @@ const port = 8000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: 'https://ecommerce-ar-frontend-six.vercel.app/', // Replace with your frontend URL
+  origin: 'https://ecommerce-ar-frontend-six.vercel.app', // Replace with your frontend URL
   methods: ['GET', 'POST', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
