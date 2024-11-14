@@ -86,7 +86,7 @@ const ARScene = () => {
   );
 };
 
-const App = () => {
+const AppScene = () => {
   return (
     <Canvas camera={{ position: [0, 1.6, 0] }} onCreated={({ gl }) => (gl.xr.enabled = true)}>
       <Suspense fallback={<div>Loading AR Scene...</div>}>
@@ -96,4 +96,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default AppScene;
