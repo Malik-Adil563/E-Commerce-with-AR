@@ -5,11 +5,11 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 
-// Import RingBufferGeometry directly
-import { RingBufferGeometry } from 'three';
+// Import RingGeometry instead of RingBufferGeometry
+import { RingGeometry } from 'three';
 
-// Extend to include RingBufferGeometry
-extend({ RingBufferGeometry });
+// Extend to include RingGeometry
+extend({ RingGeometry });
 
 const Model = ({ position }) => {
   const gltf = useLoader(GLTFLoader, '/3DModels/mercedes.glb'); // Path to your 3D model
@@ -82,7 +82,7 @@ const ARScene = () => {
 
       {/* Reticle for hit test */}
       <mesh ref={reticle} visible={false}>
-        <ringBufferGeometry args={[0.05, 0.06, 32]} />
+        <ringGeometry args={[0.05, 0.06, 32]} />
         <meshBasicMaterial color="yellow" />
       </mesh>
 
