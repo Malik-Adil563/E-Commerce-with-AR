@@ -1,67 +1,94 @@
-import React, { useRef, useEffect, Suspense, useState } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const Model = ({ position }) => {
-  const gltf = useLoader(GLTFLoader, '/3DModels/mercedes.glb');
-  return <primitive object={gltf.scene} position={position} scale={new THREE.Vector3(1, 1, 1)} />;
+// Check for AR device support
+const checkARSupport = async () => {
+  if (!navigator.xr) {
+    console.error("WebXR not supported on this device.");
+    return false;
+  }
+
+  const supported = await navigator.xr.isSessionSupported('immersive-ar');
+  if (!supported) {
+    console.error("AR is not supported on this device.");
+  }
+  return supported;
 };
 
 const ARScene = () => {
   const { gl } = useThree();
-  const [modelPosition, setModelPosition] = useState(null);
   const [hitTestSource, setHitTestSource] = useState(null);
+  const [modelPosition, setModelPosition] = useState(null);
   const reticle = useRef();
+  const [arAvailable, setArAvailable] = useState(false);
 
   useEffect(() => {
-    // Enable WebXR AR
-    gl.xr.enabled = true;
-    const arButton = ARButton.createButton(gl, { requiredFeatures: ['hit-test'] });
-    document.body.appendChild(arButton);
+    // Check AR support and initialize
+    checkARSupport().then((supported) => {
+      if (supported) {
+        setArAvailable(true);
+        // Enable WebXR AR mode
+        gl.xr.enabled = true;
+        const arButton = ARButton.createButton(gl, { requiredFeatures: ['hit-test'] });
+        document.body.appendChild(arButton);
 
-    arButton.addEventListener('click', async () => {
-      try {
-        const session = await navigator.xr.requestSession('immersive-ar', {
-          requiredFeatures: ['hit-test'],
+        arButton.addEventListener('click', async () => {
+          try {
+            // Request an immersive AR session
+            const session = await navigator.xr.requestSession('immersive-ar', {
+              requiredFeatures: ['hit-test'],
+            });
+
+            if (!session) {
+              console.error("AR session creation failed.");
+              return;
+            }
+
+            gl.xr.setSession(session);
+
+            // Initialize hit-test feature
+            session.addEventListener('end', () => {
+              setHitTestSource(null);
+              setModelPosition(null);
+            });
+
+            const referenceSpace = await session.requestReferenceSpace('viewer');
+            const hitTestSource = await session.requestHitTestSource({ space: referenceSpace });
+            setHitTestSource(hitTestSource);
+          } catch (error) {
+            console.error('Failed to start AR session:', error);
+          }
         });
-        gl.xr.setSession(session);
-
-        session.addEventListener('end', () => {
-          setHitTestSource(null);
-          setModelPosition(null);
-        });
-
-        const referenceSpace = await session.requestReferenceSpace('viewer');
-        const hitTestSource = await session.requestHitTestSource({ space: referenceSpace });
-        setHitTestSource(hitTestSource);
-      } catch (error) {
-        console.error('Failed to start AR session:', error);
       }
     });
 
     return () => {
-      if (arButton) document.body.removeChild(arButton);
+      if (gl.xr.enabled) {
+        gl.xr.setSession(null); // Cleanup on unmount
+      }
     };
   }, [gl]);
 
-  useFrame(() => {
+  useEffect(() => {
+    // Handle hit-test in the AR session
     if (!hitTestSource) return;
 
     const frame = gl.xr.getFrame();
     const referenceSpace = gl.xr.getReferenceSpace();
-    const hitTestResults = frame.getHitTestResults(hitTestSource);
 
+    const hitTestResults = frame.getHitTestResults(hitTestSource);
     if (hitTestResults.length > 0) {
       const hit = hitTestResults[0];
       const pose = hit.getPose(referenceSpace);
+
       if (pose) {
         const { position } = pose.transform;
         reticle.current.position.set(position.x, position.y, position.z);
         reticle.current.visible = true;
-        // Place the model on tap/click
+
+        // Place model on tap/click
         window.addEventListener('click', () => {
           setModelPosition([position.x, position.y, position.z]);
         });
@@ -69,24 +96,42 @@ const ARScene = () => {
     } else {
       reticle.current.visible = false;
     }
-  });
+  }, [hitTestSource, gl]);
 
   return (
     <>
+      {/* Show loading message if AR is not available */}
+      {!arAvailable && <div>AR not supported on this device or browser.</div>}
+
+      {/* Add lighting */}
       <ambientLight intensity={0.5} />
-      <directionalLight intensity={0.8} color="#ffffff" position={[1, 1, 0]} />
+      <directionalLight color="#ffffff" intensity={0.8} position={[1, 1, 0]} />
+
+      {/* Reticle for hit-test */}
       <mesh ref={reticle} visible={false}>
         <ringGeometry args={[0.05, 0.06, 32]} />
         <meshBasicMaterial color="yellow" />
       </mesh>
-      {modelPosition && <Model position={modelPosition} />}
+
+      {/* Load the model at the detected position */}
+      {modelPosition && (
+        <mesh position={modelPosition}>
+          <boxGeometry args={[0.2, 0.2, 0.2]} /> {/* A red box as the model */}
+          <meshBasicMaterial color="red" />
+        </mesh>
+      )}
     </>
   );
 };
 
 const AppScene = () => {
   return (
-    <Canvas camera={{ position: [0, 1.6, 0] }}>
+    <Canvas
+      camera={{ position: [0, 1.6, 0] }}
+      onCreated={({ gl }) => {
+        gl.xr.enabled = true;
+      }}
+    >
       <Suspense fallback={<div>Loading AR Scene...</div>}>
         <ARScene />
       </Suspense>
