@@ -1,17 +1,16 @@
-import React, { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useEffect, Suspense } from 'react';
+import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 
 const Model = () => {
-  const gltf = useLoader(GLTFLoader, '/3DModels/mercedes.glb');
+  const gltf = useLoader(GLTFLoader, '/3DModels/mercedes.glb'); // Ensure your 3D model path is correct
   return <primitive object={gltf.scene} scale={new THREE.Vector3(1, 1, 1)} position={[0, 0, -2]} />;
 };
 
 const ARScene = () => {
-  const { gl } = useThree();
+  const { gl } = useThree(); // `useThree` provides access to the WebGL renderer, scene, and camera
 
   useEffect(() => {
     gl.xr.enabled = true;
