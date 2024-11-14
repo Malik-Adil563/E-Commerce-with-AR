@@ -40,16 +40,13 @@ const ARScene = () => {
       {/* Add lighting for visibility */}
       <a-light type="ambient" color="#ffffff" intensity="0.5"></a-light>
       <a-light type="directional" color="#ffffff" intensity="0.8" position="1 1 0"></a-light>
-
-      {/* Custom marker */}
-      <a-marker preset="hiro">
+    
         <a-entity 
           gltf-model="/3DModels/mercedes.glb" 
           scale="1 1 1" 
           position="0 0 0" 
           rotation="0 45 0"
         ></a-entity>
-      </a-marker>
 
       {/* Static Camera */}
       <a-entity camera></a-entity>
