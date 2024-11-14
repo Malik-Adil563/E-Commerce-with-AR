@@ -3,7 +3,6 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton';
 import * as THREE from 'three';
 
-// Check for AR device support
 const checkARSupport = async () => {
   if (!navigator.xr) {
     console.error("WebXR not supported on this device.");
@@ -25,18 +24,15 @@ const ARScene = () => {
   const [arAvailable, setArAvailable] = useState(false);
 
   useEffect(() => {
-    // Check AR support and initialize
     checkARSupport().then((supported) => {
       if (supported) {
         setArAvailable(true);
-        // Enable WebXR AR mode
         gl.xr.enabled = true;
         const arButton = ARButton.createButton(gl, { requiredFeatures: ['hit-test'] });
         document.body.appendChild(arButton);
 
         arButton.addEventListener('click', async () => {
           try {
-            // Request an immersive AR session
             const session = await navigator.xr.requestSession('immersive-ar', {
               requiredFeatures: ['hit-test'],
             });
@@ -48,7 +44,6 @@ const ARScene = () => {
 
             gl.xr.setSession(session);
 
-            // Initialize hit-test feature
             session.addEventListener('end', () => {
               setHitTestSource(null);
               setModelPosition(null);
@@ -66,13 +61,12 @@ const ARScene = () => {
 
     return () => {
       if (gl.xr.enabled) {
-        gl.xr.setSession(null); // Cleanup on unmount
+        gl.xr.setSession(null);
       }
     };
   }, [gl]);
 
   useEffect(() => {
-    // Handle hit-test in the AR session
     if (!hitTestSource) return;
 
     const frame = gl.xr.getFrame();
@@ -88,7 +82,6 @@ const ARScene = () => {
         reticle.current.position.set(position.x, position.y, position.z);
         reticle.current.visible = true;
 
-        // Place model on tap/click
         window.addEventListener('click', () => {
           setModelPosition([position.x, position.y, position.z]);
         });
@@ -100,23 +93,19 @@ const ARScene = () => {
 
   return (
     <>
-      {/* Show loading message if AR is not available */}
       {!arAvailable && <div>AR not supported on this device or browser.</div>}
 
-      {/* Add lighting */}
       <ambientLight intensity={0.5} />
       <directionalLight color="#ffffff" intensity={0.8} position={[1, 1, 0]} />
 
-      {/* Reticle for hit-test */}
       <mesh ref={reticle} visible={false}>
         <ringGeometry args={[0.05, 0.06, 32]} />
         <meshBasicMaterial color="yellow" />
       </mesh>
 
-      {/* Load the model at the detected position */}
       {modelPosition && (
         <mesh position={modelPosition}>
-          <boxGeometry args={[0.2, 0.2, 0.2]} /> {/* A red box as the model */}
+          <boxGeometry args={[0.2, 0.2, 0.2]} />
           <meshBasicMaterial color="red" />
         </mesh>
       )}
@@ -126,12 +115,7 @@ const ARScene = () => {
 
 const AppScene = () => {
   return (
-    <Canvas
-      camera={{ position: [0, 1.6, 0] }}
-      onCreated={({ gl }) => {
-        gl.xr.enabled = true;
-      }}
-    >
+    <Canvas camera={{ position: [0, 1.6, 0] }} onCreated={({ gl }) => gl.xr.enabled = true}>
       <Suspense fallback={<div>Loading AR Scene...</div>}>
         <ARScene />
       </Suspense>
