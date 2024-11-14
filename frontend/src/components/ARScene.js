@@ -1,12 +1,12 @@
 import React, { useRef, useEffect, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 
-// Ensure geometries are properly imported
-import { RingBufferGeometry } from 'three';
+// Extend to include RingBufferGeometry
+extend({ RingBufferGeometry });
 
 const Model = ({ position }) => {
   const gltf = useLoader(GLTFLoader, '/3DModels/mercedes.glb'); // Path to your 3D model
@@ -79,8 +79,7 @@ const ARScene = () => {
 
       {/* Reticle for hit test */}
       <mesh ref={reticle} visible={false}>
-        {/* Use RingBufferGeometry from the correct THREE namespace */}
-        <RingBufferGeometry args={[0.05, 0.06, 32]} />
+        <ringBufferGeometry args={[0.05, 0.06, 32]} />
         <meshBasicMaterial color="yellow" />
       </mesh>
 
@@ -99,7 +98,5 @@ const AppScene = () => {
     </Canvas>
   );
 };
-
-export default AppScene;
 
 export default AppScene;
