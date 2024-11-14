@@ -5,6 +5,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 
+// Import RingBufferGeometry directly
+import { RingBufferGeometry } from 'three';
+
 // Extend to include RingBufferGeometry
 extend({ RingBufferGeometry });
 
