@@ -11,7 +11,7 @@ const Login = ({ setIsAuthenticated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8000/login', { email, password });
+      const response = await axios.post('https://ecommerce-ar-backend.vercel.app/login', { email, password });
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         setIsAuthenticated(true);
