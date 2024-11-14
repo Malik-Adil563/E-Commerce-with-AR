@@ -1,10 +1,10 @@
-import { Navbar, Main, ARScene, Footer } from "../components";
+import { Navbar, Main, AppScene, Footer } from "../components";
 
 function ARHome() {
   return (
     <>
       <Navbar />
-      <ARScene />
+      <AppScene />
       <Footer />
     </>
   )
