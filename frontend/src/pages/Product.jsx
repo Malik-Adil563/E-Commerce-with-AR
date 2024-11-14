@@ -28,11 +28,11 @@ const Product = () => {
       
       try {
         // Ensure the URL matches your updated endpoint
-        const productResponse = await Axios.get(`http://localhost:8000/getProduct/${id}`);
+        const productResponse = await Axios.get(`https://ecommerce-ar-backend.vercel.app/getProduct/${id}`);
         setProduct(productResponse.data);
         setLoading(false);
   
-        const similarProductsResponse = await Axios.get(`http://localhost:8000/getProductsByCategory/${productResponse.data.category}`);
+        const similarProductsResponse = await Axios.get(`https://ecommerce-ar-backend.vercel.app/${productResponse.data.category}`);
         setSimilarProducts(similarProductsResponse.data);
         setLoading2(false);
       } catch (error) {
