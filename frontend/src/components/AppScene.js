@@ -7,7 +7,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 const ARScene = ({ rendererRef }) => {
   const [model, setModel] = useState(null);
   const { camera, scene, gl } = useThree();
-  
+  const [hitTestSource, setHitTestSource] = useState(null);
+  const [localSpace, setLocalSpace] = useState(null);
+
   // Load the model
   useEffect(() => {
     const loader = new GLTFLoader();
@@ -26,12 +28,31 @@ const ARScene = ({ rendererRef }) => {
     );
   }, [scene]);
 
-  // ARButton integration
+  // ARButton integration and session initialization
   useEffect(() => {
     if (rendererRef.current) {
       const renderer = rendererRef.current;
       renderer.xr.enabled = true;
-      document.body.appendChild(ARButton.createButton(renderer));
+      document.body.appendChild(ARButton.createButton(renderer, {
+        requiredFeatures: ['hit-test'],
+      }));
+
+      const session = renderer.xr.getSession();
+      if (session) {
+        session.addEventListener('start', async () => {
+          const viewerSpace = await session.requestReferenceSpace('viewer');
+          const hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+          const localSpace = await session.requestReferenceSpace('local');
+
+          setHitTestSource(hitTestSource);
+          setLocalSpace(localSpace);
+        });
+
+        session.addEventListener('end', () => {
+          setHitTestSource(null);
+          setLocalSpace(null);
+        });
+      }
     }
   }, [rendererRef]);
 
