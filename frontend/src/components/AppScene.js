@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { ARButton } from 'https://unpkg.com/three@0.126.0/examples/jsm/webxr/ARButton.js';
 import 'webxr-polyfill';
-
 
 const AppScene = () => {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
-  let camera, scene, renderer, controller, mesh;
+  let camera, scene, renderer, controller, model;
 
   useEffect(() => {
     // Feature detection for WebXR
@@ -51,6 +51,22 @@ const AppScene = () => {
     controller.addEventListener('select', onSelect);
     scene.add(controller);
 
+    // Load the 3D model
+    const loader = new GLTFLoader();
+    loader.load(
+      '/3DModels/mercedes.glb',
+      (gltf) => {
+        model = gltf.scene;
+        model.scale.set(0.1, 0.1, 0.1); // Adjust scale to fit your scene
+        model.position.set(0, 0, -2); // Initial position
+        scene.add(model);
+      },
+      undefined,
+      (error) => {
+        console.error('An error occurred while loading the model:', error);
+      }
+    );
+
     // Add AR button to trigger AR session
     document.body.appendChild(ARButton.createButton(renderer, {
       requiredFeatures: ['hit-test'], // Optional: Specify required features for AR
@@ -61,22 +77,11 @@ const AppScene = () => {
   };
 
   const onSelect = () => {
-    const geometry = new THREE.ConeGeometry(0.1, 0.2, 32).rotateX(Math.PI / 2);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0xffffff * Math.random(),
-      shininess: 6,
-      flatShading: true,
-      transparent: 1,
-      opacity: 0.8,
-    });
-    mesh = new THREE.Mesh(geometry, material);
-
-    // Position mesh relative to the controller
-    mesh.position.set(0, 0, -0.3).applyMatrix4(controller.matrixWorld);
-    mesh.quaternion.setFromRotationMatrix(controller.matrixWorld);
-
-    // Add mesh to the scene
-    scene.add(mesh);
+    if (model) {
+      // Position the model relative to the controller when selected
+      model.position.set(0, 0, -0.5).applyMatrix4(controller.matrixWorld);
+      model.quaternion.setFromRotationMatrix(controller.matrixWorld);
+    }
   };
 
   const onWindowResize = () => {
