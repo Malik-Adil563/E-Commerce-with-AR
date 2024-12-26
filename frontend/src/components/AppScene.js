@@ -54,7 +54,7 @@ const ARScene = ({ rendererRef }) => {
   useFrame(() => {
     if (model) {
       degrees.current += 0.2; // Update rotation angle
-      model.rotation.y = THREE.Math.degToRad(degrees.current); // Apply rotation
+      model.rotation.y = THREE.MathUtils.degToRad(degrees.current); // Apply rotation
     }
   });
 
