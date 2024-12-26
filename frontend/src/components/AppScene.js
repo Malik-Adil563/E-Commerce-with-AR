@@ -58,7 +58,7 @@ const AppScene = () => {
       (gltf) => {
         model = gltf.scene;
         model.scale.set(0.1, 0.1, 0.1); // Adjust scale to fit your scene
-        model.position.set(0, 0, 0); // Initial position
+        model.position.set(0, 0, -5); // Initial position
         scene.add(model);
       },
       undefined,
