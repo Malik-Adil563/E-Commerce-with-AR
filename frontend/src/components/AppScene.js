@@ -20,13 +20,7 @@ const ARScene = ({ rendererRef }) => {
 
       const session = renderer.xr.getSession();
 
-      // Ensure the session is active before proceeding
-      const initializeHitTestSource = async () => {
-        if (!session) {
-          console.error('WebXR session is not active');
-          return;
-        }
-
+      async function initializeHitTestSource() {
         const viewerSpace = await session.requestReferenceSpace('viewer');
         const hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
         const localSpace = await session.requestReferenceSpace('local');
@@ -38,14 +32,9 @@ const ARScene = ({ rendererRef }) => {
           setHitTestSource(null);
           setLocalSpace(null);
         });
-      };
-
-      // Wait until the session is available
-      if (session) {
-        initializeHitTestSource();
-      } else {
-        session.addEventListener('start', initializeHitTestSource);
       }
+
+      initializeHitTestSource();
     }
   }, [rendererRef]);
 
@@ -115,7 +104,8 @@ const ARScene = ({ rendererRef }) => {
               shape.lineTo(0.25, 0.5);
               shape.lineTo(0, 0);
               return shape;
-            })()]} />
+            })()]}>
+          </shapeBufferGeometry>
           <meshPhongMaterial color={new THREE.Color(Math.random(), Math.random(), Math.random())} />
         </mesh>
       ))}
