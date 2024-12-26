@@ -1,97 +1,121 @@
-import React, { useRef, useEffect, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import React, { useEffect, useRef, useState } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const Model = ({ position }) => {
-  const gltf = useLoader(GLTFLoader, '/3DModels/mercedes.glb'); // Path to your 3D model
-  return <primitive object={gltf.scene} position={position} scale={new THREE.Vector3(1, 1, 1)} />;
-};
-
 const ARScene = () => {
-  const { gl, scene, camera } = useThree();
-  const [hitTestSource, setHitTestSource] = React.useState(null);
-  const [modelPosition, setModelPosition] = React.useState(null);
+  const [hitTestSource, setHitTestSource] = useState(null);
+  const [localSpace, setLocalSpace] = useState(null);
   const reticle = useRef();
+  const [polygons, setPolygons] = useState([]);
+  const rendererRef = useRef();
 
   useEffect(() => {
-    // Enable WebXR AR mode
-    gl.xr.enabled = true;
-    document.body.appendChild(ARButton.createButton(gl, { requiredFeatures: ['hit-test'] }));
+    const renderer = rendererRef.current;
+    renderer.xr.enabled = true;
 
-    // Initialize hit testing
-    const session = gl.xr.getSession();
-    session.addEventListener('end', () => {
-      setHitTestSource(null);
-      setModelPosition(null);
-    });
+    const sessionInitOptions = { requiredFeatures: ['hit-test'] };
+    const button = ARButton.createButton(renderer, sessionInitOptions);
+    document.body.appendChild(button);
 
-    session.requestReferenceSpace('viewer').then((referenceSpace) => {
-      session.requestHitTestSource({ space: referenceSpace }).then((source) => {
-        setHitTestSource(source);
+    const session = renderer.xr.getSession();
+
+    async function initializeHitTestSource() {
+      const viewerSpace = await session.requestReferenceSpace('viewer');
+      const hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
+      const localSpace = await session.requestReferenceSpace('local');
+
+      setHitTestSource(hitTestSource);
+      setLocalSpace(localSpace);
+
+      session.addEventListener('end', () => {
+        setHitTestSource(null);
+        setLocalSpace(null);
       });
-    });
+    }
 
-    return () => {
-      // Cleanup
-      if (hitTestSource) hitTestSource.cancel();
-    };
-  }, [gl, hitTestSource]);
+    initializeHitTestSource();
+  }, []);
 
-  useFrame(() => {
-    if (!hitTestSource) return;
+  useFrame((state, delta, frame) => {
+    if (!hitTestSource || !frame) return;
 
-    const frame = gl.xr.getFrame();
-    const referenceSpace = gl.xr.getReferenceSpace();
-
-    // Perform the hit test
     const hitTestResults = frame.getHitTestResults(hitTestSource);
 
     if (hitTestResults.length > 0) {
       const hit = hitTestResults[0];
-      const pose = hit.getPose(referenceSpace);
+      const pose = hit.getPose(localSpace);
 
       if (pose) {
-        const { position, orientation } = pose.transform;
-        reticle.current.position.set(position.x, position.y, position.z);
         reticle.current.visible = true;
-
-        // Place the model on tap/click
-        window.addEventListener('click', () => {
-          setModelPosition([position.x, position.y, position.z]);
-        });
+        reticle.current.matrix.fromArray(pose.transform.matrix);
       }
     } else {
       reticle.current.visible = false;
     }
   });
 
+  const handleSelect = () => {
+    if (reticle.current.visible) {
+      const position = new THREE.Vector3();
+      const quaternion = new THREE.Quaternion();
+      reticle.current.matrix.decompose(position, quaternion, new THREE.Vector3());
+
+      setPolygons((prev) => [
+        ...prev,
+        { position: position.toArray(), quaternion: quaternion.toArray() },
+      ]);
+    }
+  };
+
+  useEffect(() => {
+    const renderer = rendererRef.current;
+    const controller = renderer.xr.getController(0);
+    controller.addEventListener('select', handleSelect);
+    return () => {
+      controller.removeEventListener('select', handleSelect);
+    };
+  }, []);
+
   return (
     <>
-      {/* Add lighting */}
       <ambientLight intensity={0.5} />
-      <directionalLight color="#ffffff" intensity={0.8} position={[1, 1, 0]} />
+      <directionalLight intensity={0.8} position={[1, 1, 0]} />
 
-      {/* Reticle for hit test */}
-      <mesh ref={reticle} visible={false}>
-        <ringBufferGeometry args={[0.05, 0.06, 32]} />
+      {/* Reticle */}
+      <mesh ref={reticle} visible={false} matrixAutoUpdate={false}>
+        <ringBufferGeometry args={[0.15, 0.2, 32]} />
         <meshBasicMaterial color="yellow" />
       </mesh>
 
-      {/* Load the model at the detected position */}
-      {modelPosition && <Model position={modelPosition} />}
+      {/* Polygons */}
+      {polygons.map((polygon, idx) => (
+        <mesh
+          key={idx}
+          position={polygon.position}
+          quaternion={polygon.quaternion}
+        >
+          <shapeBufferGeometry
+            args={[(() => {
+              const shape = new THREE.Shape();
+              shape.moveTo(0, 0);
+              shape.lineTo(0.5, 0);
+              shape.lineTo(0.25, 0.5);
+              shape.lineTo(0, 0);
+              return shape;
+            })()]}
+          />
+          <meshPhongMaterial color={new THREE.Color(Math.random(), Math.random(), Math.random())} />
+        </mesh>
+      ))}
     </>
   );
 };
 
 const AppScene = () => {
   return (
-    <Canvas camera={{ position: [0, 1.6, 0] }} onCreated={({ gl }) => (gl.xr.enabled = true)}>
-      <Suspense fallback={<div>Loading AR Scene...</div>}>
-        <ARScene />
-      </Suspense>
+    <Canvas ref={rendererRef}>
+      <ARScene />
     </Canvas>
   );
 };
