@@ -1,116 +1,64 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 const ARScene = ({ rendererRef }) => {
-  const [hitTestSource, setHitTestSource] = useState(null);
-  const [localSpace, setLocalSpace] = useState(null);
-  const reticle = useRef();
-  const [polygons, setPolygons] = useState([]);
-
+  const [model, setModel] = useState(null);
+  const { camera, scene, gl } = useThree();
+  
+  // Load the model
   useEffect(() => {
-    const renderer = rendererRef.current;
-    if (renderer) {
+    const loader = new GLTFLoader();
+    const modelUrl = 'https://raw.githubusercontent.com/immersive-web/webxr-samples/main/media/gltf/space/space.gltf';
+
+    loader.load(
+      modelUrl,
+      (gltf) => {
+        const loadedModel = gltf.scene;
+        loadedModel.position.z = -10; // Move model back in space
+        scene.add(loadedModel);
+        setModel(loadedModel);
+      },
+      undefined,
+      (error) => console.error('Error loading model:', error)
+    );
+  }, [scene]);
+
+  // ARButton integration
+  useEffect(() => {
+    if (rendererRef.current) {
+      const renderer = rendererRef.current;
       renderer.xr.enabled = true;
-
-      const sessionInitOptions = { requiredFeatures: ['hit-test'] };
-      const button = ARButton.createButton(renderer, sessionInitOptions);
-      document.body.appendChild(button);
-
-      const session = renderer.xr.getSession();
-
-      async function initializeHitTestSource() {
-        const viewerSpace = await session.requestReferenceSpace('viewer');
-        const hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
-        const localSpace = await session.requestReferenceSpace('local');
-
-        setHitTestSource(hitTestSource);
-        setLocalSpace(localSpace);
-
-        session.addEventListener('end', () => {
-          setHitTestSource(null);
-          setLocalSpace(null);
-        });
-      }
-
-      initializeHitTestSource();
+      document.body.appendChild(ARButton.createButton(renderer));
     }
   }, [rendererRef]);
 
-  useFrame((state, delta, frame) => {
-    if (!hitTestSource || !frame) return;
-
-    const hitTestResults = frame.getHitTestResults(hitTestSource);
-
-    if (hitTestResults.length > 0) {
-      const hit = hitTestResults[0];
-      const pose = hit.getPose(localSpace);
-
-      if (pose) {
-        reticle.current.visible = true;
-        reticle.current.matrix.fromArray(pose.transform.matrix);
-      }
-    } else {
-      reticle.current.visible = false;
-    }
-  });
-
-  const handleSelect = () => {
-    if (reticle.current.visible) {
-      const position = new THREE.Vector3();
-      const quaternion = new THREE.Quaternion();
-      reticle.current.matrix.decompose(position, quaternion, new THREE.Vector3());
-
-      setPolygons((prev) => [
-        ...prev,
-        { position: position.toArray(), quaternion: quaternion.toArray() },
-      ]);
-    }
+  // Resize handling
+  const onWindowResize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    gl.setSize(window.innerWidth, window.innerHeight);
   };
 
   useEffect(() => {
-    const renderer = rendererRef.current;
-    const controller = renderer.xr.getController(0);
-    controller.addEventListener('select', handleSelect);
+    window.addEventListener('resize', onWindowResize, false);
     return () => {
-      controller.removeEventListener('select', handleSelect);
+      window.removeEventListener('resize', onWindowResize);
     };
-  }, [rendererRef]);
+  }, [camera, gl]);
 
-  return (
-    <>
-      <ambientLight intensity={0.5} />
-      <directionalLight intensity={0.8} position={[1, 1, 0]} />
+  // Rotation logic for the model
+  const degrees = useRef(0); // Track rotation angle
+  useFrame(() => {
+    if (model) {
+      degrees.current += 0.2; // Update rotation angle
+      model.rotation.y = THREE.Math.degToRad(degrees.current); // Apply rotation
+    }
+  });
 
-      {/* Reticle */}
-      <mesh ref={reticle} visible={false}>
-        <ringGeometry args={[0.15, 0.2, 32]} /> {/* Use ringGeometry directly */}
-        <meshBasicMaterial color="yellow" />
-      </mesh>
-
-      {/* Polygons */}
-      {polygons.map((polygon, idx) => (
-        <mesh
-          key={idx}
-          position={polygon.position}
-          quaternion={polygon.quaternion}
-        >
-          <shapeBufferGeometry
-            args={[(() => {
-              const shape = new THREE.Shape();
-              shape.moveTo(0, 0);
-              shape.lineTo(0.5, 0);
-              shape.lineTo(0.25, 0.5);
-              shape.lineTo(0, 0);
-              return shape;
-            })()]}>
-          </shapeBufferGeometry>
-          <meshPhongMaterial color={new THREE.Color(Math.random(), Math.random(), Math.random())} />
-        </mesh>
-      ))}
-    </>
-  );
+  return null;
 };
 
 const AppScene = () => {
@@ -118,8 +66,8 @@ const AppScene = () => {
 
   return (
     <Canvas
-      onCreated={({ gl }) => {
-        rendererRef.current = gl; // Store renderer reference
+      onCreated={({ gl, camera, scene }) => {
+        rendererRef.current = gl; // Store the renderer reference
       }}
     >
       <ARScene rendererRef={rendererRef} />
