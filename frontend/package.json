@@ -34,7 +34,8 @@
     "util": "^0.12.5",
     "vm-browserify": "^1.1.2",
     "web-vitals": "^2.1.4",
-    "webpack": "file:latest"
+    "webpack": "file:latest",
+    "webxr-polyfill": "^2.0.3"
   },
   "scripts": {
     "start": "craco start",

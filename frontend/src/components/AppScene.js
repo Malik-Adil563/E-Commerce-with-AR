@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { ARButton } from 'https://unpkg.com/three@0.126.0/examples/jsm/webxr/ARButton.js';
+import 'webxr-polyfill';
+
 
 const AppScene = () => {
   const containerRef = useRef(null);
@@ -8,6 +10,12 @@ const AppScene = () => {
   let camera, scene, renderer, controller, mesh;
 
   useEffect(() => {
+    // Feature detection for WebXR
+    if (!navigator.xr) {
+      alert('Your device does not support WebXR.');
+      return;
+    }
+
     init();
     animate();
 
@@ -44,7 +52,9 @@ const AppScene = () => {
     scene.add(controller);
 
     // Add AR button to trigger AR session
-    document.body.appendChild(ARButton.createButton(renderer));
+    document.body.appendChild(ARButton.createButton(renderer, {
+      requiredFeatures: ['hit-test'], // Optional: Specify required features for AR
+    }));
 
     // Handle window resizing
     window.addEventListener('resize', onWindowResize, false);
