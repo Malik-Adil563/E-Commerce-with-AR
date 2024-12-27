@@ -54,7 +54,7 @@ const AppScene = () => {
     // Load the 3D model
     const loader = new GLTFLoader();
     loader.load(
-      '/3DModels/mercedes.glb',
+      '/3DModels/tshirt.glb',
       (gltf) => {
         model = gltf.scene;
         model.scale.set(0.1, 0.1, 0.1); // Adjust scale to fit your scene
