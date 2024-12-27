@@ -57,8 +57,14 @@ const AppScene = () => {
       '/3DModels/tshirt.glb',
       (gltf) => {
         model = gltf.scene;
-        model.scale.set(0.1, 0.1, 0.1); // Adjust scale to fit your scene
-        model.position.set(0, 0, -2); // Initial position
+        model.scale.set(0.05, 0.05, 0.05); // Adjust these values to reduce the model size
+
+        // Adjust the orientation to make the model upright
+        model.rotation.x = Math.PI / 2; // Rotate 90 degrees around the X-axis
+        model.rotation.y = Math.PI; // Optional: Adjust orientation if needed
+
+        // Set the initial position of the model
+        model.position.set(0, 0, -2); // Adjust position as required
         scene.add(model);
       },
       undefined,
