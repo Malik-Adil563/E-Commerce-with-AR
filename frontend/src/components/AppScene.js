@@ -84,9 +84,22 @@ const AppScene = () => {
 
   const onSelect = () => {
     if (model) {
-      // Position the model relative to the controller when selected
-      model.position.set(0, 0, -0.5).applyMatrix4(controller.matrixWorld);
-      model.quaternion.setFromRotationMatrix(controller.matrixWorld);
+      const position = new THREE.Vector3();
+    position.set(0, 0, -0.5).applyMatrix4(controller.matrixWorld);
+    model.position.copy(position);
+
+    // Retain the original scale and rotation
+    const originalScale = model.scale.clone(); // Clone the original scale
+    const originalRotation = model.rotation.clone(); // Clone the original rotation
+
+    // Apply controller rotation but keep the adjusted model rotation
+    model.quaternion.setFromRotationMatrix(controller.matrixWorld);
+    model.rotation.x = originalRotation.x; // Reapply the adjusted rotation
+    model.rotation.y = originalRotation.y;
+    model.rotation.z = originalRotation.z;
+
+    // Reapply the adjusted scale
+    model.scale.copy(originalScale);
     }
   };
 
