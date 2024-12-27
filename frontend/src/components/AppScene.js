@@ -51,8 +51,8 @@ const AppScene = () => {
       (gltf) => {
         model = gltf.scene;
         model.scale.set(0.05, 0.05, 0.05); // Adjusted scale
-        model.rotation.x = Math.PI / 2; // Adjusted rotation
-        model.position.set(0, 0, -2); // Adjusted position
+        model.rotation.x = Math.PI / 2; // Keep it upright
+        model.position.set(0, 1, -2); // Adjusted position (higher and forward)
         scene.add(model);
       },
       undefined,
@@ -88,11 +88,13 @@ const AppScene = () => {
 
   const onZoom = (event) => {
     if (model) {
-      const zoomFactor = event.deltaY * -0.001; // Adjust zoom sensitivity
-      model.scale.multiplyScalar(1 + zoomFactor);
+      const zoomFactor = 1 - event.deltaY * 0.001; // Adjust zoom sensitivity
+      const newScale = model.scale.clone().multiplyScalar(zoomFactor);
 
       // Prevent the model from becoming too small or too large
-      model.scale.clampScalar(0.01, 0.5);
+      if (newScale.x > 0.01 && newScale.x < 1) {
+        model.scale.copy(newScale);
+      }
     }
   };
 
