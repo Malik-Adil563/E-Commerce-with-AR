@@ -51,8 +51,8 @@ const AppScene = () => {
       (gltf) => {
         model = gltf.scene;
         model.scale.set(0.02, 0.02, 0.02); // Adjusted scale
-        model.rotation.x = Math.PI / 4; // Keep it upright
-        model.position.set(0, 1, -3); // Adjusted position (higher and forward)
+        model.rotation.x = Math.PI; // Keep it upright
+        model.position.set(0, 1, -2); // Adjusted position (higher and forward)
         scene.add(model);
       },
       undefined,
