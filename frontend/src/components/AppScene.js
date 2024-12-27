@@ -50,9 +50,9 @@ const AppScene = () => {
       '/3DModels/tshirt.glb',
       (gltf) => {
         model = gltf.scene;
-        model.scale.set(0.05, 0.05, 0.05); // Adjusted scale
-        model.rotation.x = Math.PI / 2; // Keep it upright
-        model.position.set(0, 1, -2); // Adjusted position (higher and forward)
+        model.scale.set(0.02, 0.02, 0.02); // Adjusted scale
+        
+        model.position.set(0, 1, -4); // Adjusted position (higher and forward)
         scene.add(model);
       },
       undefined,
@@ -79,7 +79,7 @@ const AppScene = () => {
       const originalRotation = model.rotation.clone();
 
       model.quaternion.setFromRotationMatrix(controller.matrixWorld);
-      model.rotation.x = originalRotation.x;
+      
       model.rotation.y = originalRotation.y;
       model.rotation.z = originalRotation.z;
       model.scale.copy(originalScale);
