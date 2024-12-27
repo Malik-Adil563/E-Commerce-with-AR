@@ -10,7 +10,6 @@ const AppScene = () => {
   let camera, scene, renderer, controller, model;
 
   useEffect(() => {
-    // Feature detection for WebXR
     if (!navigator.xr) {
       alert('Your device does not support WebXR.');
       return;
@@ -19,19 +18,16 @@ const AppScene = () => {
     init();
     animate();
 
-    // Cleanup function to remove WebXR button and renderer
     return () => {
       sceneRef.current.removeChild(renderer.domElement);
     };
   }, []);
 
   const init = () => {
-    // Create container and append to the ref container
     const container = document.createElement('div');
     containerRef.current.appendChild(container);
     sceneRef.current = container;
 
-    // Initialize Three.js scene, camera, and renderer
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 40);
 
@@ -41,30 +37,22 @@ const AppScene = () => {
     renderer.xr.enabled = true;
     container.appendChild(renderer.domElement);
 
-    // Set up lighting
     const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
     light.position.set(0.5, 1, 0.25);
     scene.add(light);
 
-    // Set up the AR controller
     controller = renderer.xr.getController(0);
     controller.addEventListener('select', onSelect);
     scene.add(controller);
 
-    // Load the 3D model
     const loader = new GLTFLoader();
     loader.load(
       '/3DModels/tshirt.glb',
       (gltf) => {
         model = gltf.scene;
-        model.scale.set(0.05, 0.05, 0.05); // Adjust these values to reduce the model size
-
-        // Adjust the orientation to make the model upright
-        model.rotation.x = Math.PI / 2; // Rotate 90 degrees around the X-axis
-        model.rotation.y = Math.PI; // Optional: Adjust orientation if needed
-
-        // Set the initial position of the model
-        model.position.set(0, 0, -2); // Adjust position as required
+        model.scale.set(0.05, 0.05, 0.05); // Adjusted scale
+        model.rotation.x = Math.PI / 2; // Adjusted rotation
+        model.position.set(0, 0, -2); // Adjusted position
         scene.add(model);
       },
       undefined,
@@ -73,33 +61,38 @@ const AppScene = () => {
       }
     );
 
-    // Add AR button to trigger AR session
     document.body.appendChild(ARButton.createButton(renderer, {
-      requiredFeatures: ['hit-test'], // Optional: Specify required features for AR
+      requiredFeatures: ['hit-test'],
     }));
 
-    // Handle window resizing
     window.addEventListener('resize', onWindowResize, false);
+    window.addEventListener('wheel', onZoom); // Add mouse wheel event listener
   };
 
   const onSelect = () => {
     if (model) {
       const position = new THREE.Vector3();
-    position.set(0, 0, -0.5).applyMatrix4(controller.matrixWorld);
-    model.position.copy(position);
+      position.set(0, 0, -0.5).applyMatrix4(controller.matrixWorld);
+      model.position.copy(position);
 
-    // Retain the original scale and rotation
-    const originalScale = model.scale.clone(); // Clone the original scale
-    const originalRotation = model.rotation.clone(); // Clone the original rotation
+      const originalScale = model.scale.clone();
+      const originalRotation = model.rotation.clone();
 
-    // Apply controller rotation but keep the adjusted model rotation
-    model.quaternion.setFromRotationMatrix(controller.matrixWorld);
-    model.rotation.x = originalRotation.x; // Reapply the adjusted rotation
-    model.rotation.y = originalRotation.y;
-    model.rotation.z = originalRotation.z;
+      model.quaternion.setFromRotationMatrix(controller.matrixWorld);
+      model.rotation.x = originalRotation.x;
+      model.rotation.y = originalRotation.y;
+      model.rotation.z = originalRotation.z;
+      model.scale.copy(originalScale);
+    }
+  };
 
-    // Reapply the adjusted scale
-    model.scale.copy(originalScale);
+  const onZoom = (event) => {
+    if (model) {
+      const zoomFactor = event.deltaY * -0.001; // Adjust zoom sensitivity
+      model.scale.multiplyScalar(1 + zoomFactor);
+
+      // Prevent the model from becoming too small or too large
+      model.scale.clampScalar(0.01, 0.5);
     }
   };
 
